@@ -45,8 +45,26 @@ class OpendataCWB:
 
         for i in the_dict:
             element_value = None
-            if index < len(i[time_str]):
-                element_value = i[time_str][index].get(elementvalue, None)
+            if i[time_str]:
+                # Some elements (T, AT, Td, RH, CI) are hourly and use DataTime
+                # (point-in-time), while others (Wx, PoP, WS, WD) are 3-hourly
+                # and use StartTime/EndTime (period).  Using the same array index
+                # for both misaligns hourly data by up to N*2 hours per slot.
+                # Fix: for DataTime elements, locate the entry whose timestamp
+                # matches start_time instead of blindly using the slot index.
+                first_entry = i[time_str][0]
+                datatime_key = (
+                    "DataTime" if "DataTime" in first_entry else
+                    "dataTime" if "dataTime" in first_entry else
+                    None
+                )
+                if datatime_key and start_time:
+                    for t_entry in i[time_str]:
+                        if t_entry.get(datatime_key) == start_time:
+                            element_value = t_entry.get(elementvalue, None)
+                            break
+                elif index < len(i[time_str]):
+                    element_value = i[time_str][index].get(elementvalue, None)
             if element_value is None:
                 continue
 
