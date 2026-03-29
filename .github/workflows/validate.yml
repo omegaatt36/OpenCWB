@@ -2,45 +2,36 @@ name: Validate
 
 on:
   push:
+    branches:
+      - main
   pull_request:
+    branches:
+      - main
 
 jobs:
-  spellcheck_lint:
-    name: ShellCheck
-    runs-on: ubuntu-latest
-    steps:
-      - name: 📦 Checkout the repository
-        uses: actions/checkout@v2
-
-      - name: ✅ Run PySpelling as a GitHub action
-        continue-on-error: true
-        uses: rojopolis/spellcheck-github-actions@0.14.0
-        with:
-          config_path: spellcheck.yml
-
-  python_linting:
+  lint:
     name: Python linting
     runs-on: ubuntu-latest
     steps:
       - name: 📦 Check out source repository
-        uses: actions/checkout@v2
-      - name: 📦 Set up Python environment
-        uses: actions/setup-python@v1
-        with:
-          python-version: "3.8"
-      - name: ✅ flake8 Lint
-        continue-on-error: true
-        uses: py-actions/flake8@v1
-        with:
-          ignore: "F401"
-          max-line-length: "120"
+        uses: actions/checkout@v4
+
+      - name: 📦 Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: ✅ ruff check
+        run: uvx ruff check --ignore F401 --line-length 120 custom_components/
+
+      - name: ✅ ruff format check
+        run: uvx ruff format --check custom_components/
 
   validate:
-    runs-on: "ubuntu-latest"
+    runs-on: ubuntu-latest
     steps:
-      - uses: "actions/checkout@v2"
+      - uses: actions/checkout@v4
+
       - name: HACS validation
         continue-on-error: true
-        uses: "hacs/action@main"
+        uses: hacs/action@main
         with:
-          category: "integration"
+          category: integration
